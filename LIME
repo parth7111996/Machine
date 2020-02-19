@@ -1,0 +1,55 @@
+import lime
+import lime.lime_tabular
+
+import pandas as pd
+import numpy as np
+import lightgbm as lgb
+
+# For converting textual categories to integer labels 
+from sklearn.preprocessing import LabelEncoder
+
+# for creating train test split
+from sklearn.model_selection import train_test_split
+
+df_titanic = pd.read_csv('titanic.csv')
+
+lgb_params = {
+    'task': 'train',
+    'boosting_type': 'goss',
+    'objective': 'binary',
+    'metric':'binary_logloss',
+    'metric': {'l2', 'auc'},
+    'num_leaves': 50,
+    'learning_rate': 0.1,
+    'feature_fraction': 0.8,
+    'bagging_fraction': 0.8,
+    'verbose': None,
+    'num_iteration':100,
+    'num_threads':7,
+    'max_depth':12,
+    'min_data_in_leaf':100,
+    'alpha':0.5}
+
+le = LabelEncoder()
+df_titanic['pclass_le'] = le.fit_transform(df_titanic['pclass'])
+df_titanic['sibsp_le'] = le.fit_transform(df_titanic['sibsp'])
+df_titanic['sex_le'] = le.fit_transform(df_titanic['sex'])
+
+feat = ['pclass_le', 'sex_le','sibsp_le', 'parch']
+
+X_train,X_test,y_train,y_test = train_test_split(df_titanic[feat],df_titanic[['survived']],test_size=0.3)
+
+lgb_train = lgb.Dataset(X_train, y_train)
+lgb_eval = lgb.Dataset(X_test, y_test)
+
+model = lgb.train(lgb_params,lgb_train,num_boost_round=80,valid_sets=lgb_eval,early_stopping_rounds=5)
+
+
+explainer = lime.lime_tabular.LimeTabularExplainer(df_titanic[model.feature_name()].astype(int).values,  
+mode='classification',training_labels=df_titanic['survived'],feature_names=model.feature_name())
+
+
+# asking for explanation for LIME model
+for i in range(10):
+    exp = explainer.explain_instance(df_titanic.loc[i,feat].astype(int).values, prob, num_features=5)
+    exp.show_in_notebook(show_table = True)
