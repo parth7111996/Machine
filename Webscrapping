@@ -1,0 +1,27 @@
+pip install selenium                          #Installing Libraries
+from selenium import webdriver
+from bs4 import BeautifulSoup
+import pandas as pd
+
+driver = webdriver.Chrome("C:/Users/parth.shah/Downloads/chromedriver_win32 (1)/chromedriver")   ##Connect the chrome to juptyter notebook
+
+driver.get("https://www.flipkart.com/laptops/</a>~buyback-guarantee-on-laptops-/pr?sid=6bo%2Cb5g&uniq") #Get the data from the website 
+
+products=[] #List to store name of the product  ##declare empty list 
+prices=[] #List to store price of the product   ##declare empty list 
+ratings=[] #List to store rating of the product ##declare empty list
+
+content = driver.page_source                      ##get the content from the page
+soup = BeautifulSoup(content)                     ##Help python traverse through it
+
+for a in soup.findAll('a',href=True, attrs={'class':'_31qSD5'}):                ##for loop to iterate over products on that page
+    name=a.find('div', attrs={'class':'_3wU53n'})
+    price=a.find('div', attrs={'class':'_1vC4OE _2rQ-NK'})
+    rating=a.find('div', attrs={'class':'hGSR34'})
+    products.append(name.text)
+    prices.append(price.text)
+    ratings.append(rating.text)
+    
+    
+df = pd.DataFrame({'Product Name':products,'Price':prices,'Rating':ratings})    #save the data in a dataframe
+df.to_csv('products.csv', index=False, encoding='utf-8')                         #export
